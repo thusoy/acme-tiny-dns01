@@ -15,7 +15,7 @@ LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(logging.StreamHandler())
 LOGGER.setLevel(logging.INFO)
 
-def get_crt(account_key, csr, log=LOGGER, CA=DEFAULT_CA):
+def get_crt(account_key, csr, skip_check=False, log=LOGGER, CA=DEFAULT_CA):
     # helper function base64 encode for jose spec
     def _b64(b):
         return base64.urlsafe_b64encode(b).decode('utf8').replace("=", "")
@@ -124,19 +124,20 @@ def get_crt(account_key, csr, log=LOGGER, CA=DEFAULT_CA):
 
         challenge, token, keyauthorization, record = pending[domain]
 
-        # check that the file is in place
-        addr = set()
-        for x in dns.resolver.query(dns.resolver.zone_for_name(domain), 'NS'):
-            addr = addr.union(map(str, dns.resolver.query(str(x), 'A')))
-            addr = addr.union(map(str, dns.resolver.query(str(x), 'AAAA')))
+        if not skip_check:
+            # check that the file is in place
+            addr = set()
+            for x in dns.resolver.query(dns.resolver.zone_for_name(domain), 'NS'):
+                addr = addr.union(map(str, dns.resolver.query(str(x), 'A')))
+                addr = addr.union(map(str, dns.resolver.query(str(x), 'AAAA')))
 
-        for x in addr:
-            req = dns.message.make_query('_acme-challenge.%s' % domain, 'TXT')
-            resp = dns.query.udp(req, x, timeout=30)
-            for y in resp.answer:
-                txt = map(lambda x: str(x)[1:-1], y)
-                if record not in txt:
-                    raise ValueError("_acme-challenge.{0} does not contain {1} on nameserver {2}".format(domain, record, x))
+            for x in addr:
+                req = dns.message.make_query('_acme-challenge.%s' % domain, 'TXT')
+                resp = dns.query.udp(req, x, timeout=30)
+                for y in resp.answer:
+                    txt = map(lambda x: str(x)[1:-1], y)
+                    if record not in txt:
+                        raise ValueError("_acme-challenge.{0} does not contain {1} on nameserver {2}".format(domain, record, x))
 
         # notify challenge are met
         code, result = _send_signed_request(challenge['uri'], {
@@ -202,11 +203,12 @@ def main(argv):
     parser.add_argument("--account-key", required=True, help="path to your Let's Encrypt account private key")
     parser.add_argument("--csr", required=True, help="path to your certificate signing request")
     parser.add_argument("--quiet", action="store_const", const=logging.ERROR, help="suppress output except for errors")
+    parser.add_argument("--skip", action="store_true", help="skip checking for DNS records")
     parser.add_argument("--ca", default=DEFAULT_CA, help="certificate authority, default is Let's Encrypt")
 
     args = parser.parse_args(argv)
     LOGGER.setLevel(args.quiet or LOGGER.level)
-    signed_crt = get_crt(args.account_key, args.csr, log=LOGGER, CA=args.ca)
+    signed_crt = get_crt(args.account_key, args.csr, args.skip, log=LOGGER, CA=args.ca)
     sys.stdout.write(signed_crt)
 
 if __name__ == "__main__": # pragma: no cover
