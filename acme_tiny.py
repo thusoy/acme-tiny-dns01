@@ -112,7 +112,7 @@ def get_crt(account_key, csr, skip_check=False, log=LOGGER, CA=DEFAULT_CA):
         token = re.sub(r"[^A-Za-z0-9_\-]", "_", challenge['token'])
         keyauthorization = "{0}.{1}".format(token, thumbprint)
         record = _b64(hashlib.sha256(keyauthorization).digest())
-        log.info('_acme-challenege.%s. 300 IN TXT %s' % (domain, record))
+        log.info('_acme-challenge.%s. 300 IN TXT %s' % (domain, record))
         pending[domain] = (challenge, token, keyauthorization, record)
 
     log.info('Press enter to continue after updating DNS server')
