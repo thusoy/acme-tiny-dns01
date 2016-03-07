@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 import argparse, subprocess, json, os, sys, base64, binascii, time, hashlib, re, copy, textwrap, logging
+import dns.message
+import dns.query
+import dns.resolver
 try:
     from urllib.request import urlopen # Python 3
 except ImportError:
@@ -12,7 +15,7 @@ LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(logging.StreamHandler())
 LOGGER.setLevel(logging.INFO)
 
-def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
+def get_crt(account_key, csr, log=LOGGER, CA=DEFAULT_CA):
     # helper function base64 encode for jose spec
     def _b64(b):
         return base64.urlsafe_b64encode(b).decode('utf8').replace("=", "")
@@ -91,9 +94,11 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
     else:
         raise ValueError("Error registering: {0} {1}".format(code, result))
 
+    pending = {}
+
     # verify each domain
     for domain in domains:
-        log.info("Verifying {0}...".format(domain))
+        log.info("Verifying {0} part 1...".format(domain))
 
         # get new challenge
         code, result = _send_signed_request(CA + "/acme/new-authz", {
@@ -102,25 +107,36 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
         })
         if code != 201:
             raise ValueError("Error requesting challenges: {0} {1}".format(code, result))
-
         # make the challenge file
-        challenge = [c for c in json.loads(result.decode('utf8'))['challenges'] if c['type'] == "http-01"][0]
+        challenge = [c for c in json.loads(result.decode('utf8'))['challenges'] if c['type'] == "dns-01"][0]
         token = re.sub(r"[^A-Za-z0-9_\-]", "_", challenge['token'])
         keyauthorization = "{0}.{1}".format(token, thumbprint)
-        wellknown_path = os.path.join(acme_dir, token)
-        with open(wellknown_path, "w") as wellknown_file:
-            wellknown_file.write(keyauthorization)
+        record = _b64(hashlib.sha256(keyauthorization).digest())
+        log.info('_acme-challenege.%s. 300 IN TXT %s' % (domain, record))
+        pending[domain] = (challenge, token, keyauthorization, record)
+
+    log.info('Press enter to continue after updating DNS server')
+    raw_input()
+
+    # verify each domain
+    for domain in pending.keys():
+        log.info("Verifying {0} part 2...".format(domain))
+
+        challenge, token, keyauthorization, record = pending[domain]
 
         # check that the file is in place
-        wellknown_url = "http://{0}/.well-known/acme-challenge/{1}".format(domain, token)
-        try:
-            resp = urlopen(wellknown_url)
-            resp_data = resp.read().decode('utf8').strip()
-            assert resp_data == keyauthorization
-        except (IOError, AssertionError):
-            os.remove(wellknown_path)
-            raise ValueError("Wrote file to {0}, but couldn't download {1}".format(
-                wellknown_path, wellknown_url))
+        addr = set()
+        for x in dns.resolver.query(dns.resolver.zone_for_name(domain), 'NS'):
+            addr = addr.union(map(str, dns.resolver.query(str(x), 'A')))
+            addr = addr.union(map(str, dns.resolver.query(str(x), 'AAAA')))
+
+        for x in addr:
+            req = dns.message.make_query('_acme-challenge.%s' % domain, 'TXT')
+            resp = dns.query.udp(req, x, timeout=30)
+            for y in resp.answer:
+                txt = map(lambda x: str(x)[1:-1], y)
+                if record not in txt:
+                    raise ValueError("_acme-challenge.{0} does not contain {1} on nameserver {2}".format(domain, record, x))
 
         # notify challenge are met
         code, result = _send_signed_request(challenge['uri'], {
@@ -142,7 +158,6 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
                 time.sleep(2)
             elif challenge_status['status'] == "valid":
                 log.info("{0} verified!".format(domain))
-                os.remove(wellknown_path)
                 break
             else:
                 raise ValueError("{0} challenge did not pass: {1}".format(
@@ -175,23 +190,23 @@ def main(argv):
             only ~200 lines, so it won't take long.
 
             ===Example Usage===
-            python acme_tiny.py --account-key ./account.key --csr ./domain.csr --acme-dir /usr/share/nginx/html/.well-known/acme-challenge/ > signed.crt
+            python acme_tiny.py --account-key ./account.key --csr ./domain.csr > signed.crt
             ===================
 
             ===Example Crontab Renewal (once per month)===
-            0 0 1 * * python /path/to/acme_tiny.py --account-key /path/to/account.key --csr /path/to/domain.csr --acme-dir /usr/share/nginx/html/.well-known/acme-challenge/ > /path/to/signed.crt 2>> /var/log/acme_tiny.log
+            XXX NEEDS DYNAMIC DNS UPDATE CONTROL TO WORK
+            0 0 1 * * python /path/to/acme_tiny.py --account-key /path/to/account.key --csr /path/to/domain.csr > /path/to/signed.crt 2>> /var/log/acme_tiny.log
             ==============================================
             """)
     )
     parser.add_argument("--account-key", required=True, help="path to your Let's Encrypt account private key")
     parser.add_argument("--csr", required=True, help="path to your certificate signing request")
-    parser.add_argument("--acme-dir", required=True, help="path to the .well-known/acme-challenge/ directory")
     parser.add_argument("--quiet", action="store_const", const=logging.ERROR, help="suppress output except for errors")
     parser.add_argument("--ca", default=DEFAULT_CA, help="certificate authority, default is Let's Encrypt")
 
     args = parser.parse_args(argv)
     LOGGER.setLevel(args.quiet or LOGGER.level)
-    signed_crt = get_crt(args.account_key, args.csr, args.acme_dir, log=LOGGER, CA=args.ca)
+    signed_crt = get_crt(args.account_key, args.csr, log=LOGGER, CA=args.ca)
     sys.stdout.write(signed_crt)
 
 if __name__ == "__main__": # pragma: no cover
