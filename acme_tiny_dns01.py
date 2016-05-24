@@ -85,6 +85,7 @@ def get_crt(account_key, csr, skip_check=False, log=LOGGER, CA=DEFAULT_CA):
     log.info("Registering account...")
     code, result = _send_signed_request(CA + "/acme/new-reg", {
         "resource": "new-reg",
+        #"contact": [ "mailto:postmaster@example.com" ],
         "agreement": "https://letsencrypt.org/documents/LE-SA-v1.0.1-July-27-2015.pdf",
     })
     if code == 201:
@@ -185,19 +186,14 @@ def main(argv):
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=textwrap.dedent("""\
-            This script automates the process of getting a signed TLS certificate from
-            Let's Encrypt using the ACME protocol. It will need to be run on your server
-            and have access to your private account key, so PLEASE READ THROUGH IT! It's
-            only ~200 lines, so it won't take long.
+            This script assists you in the process of getting a signed TLS certificate from
+            Let's Encrypt using the DNS challenge of the ACME protocol.
+            It will need to have access to your private account key, so PLEASE READ THROUGH IT!
+            It's only ~200 lines, so it won't take long.
 
             ===Example Usage===
-            python acme_tiny.py --account-key ./account.key --csr ./domain.csr > signed.crt
+            python acme_tiny_dns01.py --account-key ./account.key --csr ./domain.csr > signed.crt
             ===================
-
-            ===Example Crontab Renewal (once per month)===
-            XXX NEEDS DYNAMIC DNS UPDATE CONTROL TO WORK
-            0 0 1 * * python /path/to/acme_tiny.py --account-key /path/to/account.key --csr /path/to/domain.csr > /path/to/signed.crt 2>> /var/log/acme_tiny.log
-            ==============================================
             """)
     )
     parser.add_argument("--account-key", required=True, help="path to your Let's Encrypt account private key")
