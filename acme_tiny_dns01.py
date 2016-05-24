@@ -132,7 +132,7 @@ def get_crt(account_key, csr, skip_check=False, log=LOGGER, CA=DEFAULT_CA):
                 addr = addr.union(map(str, dns.resolver.query(str(x), 'A')))
                 addr = addr.union(map(str, dns.resolver.query(str(x), 'AAAA')))
 
-            # check directly on each NS server of the current domain, if the challenge is in place
+            # check directly on each name server of the current domain, if the challenge is in place
             while len(addr):
                 x = addr.pop()
                 log.info("Locally checking challenge on {0}...".format(x))
@@ -142,14 +142,15 @@ def get_crt(account_key, csr, skip_check=False, log=LOGGER, CA=DEFAULT_CA):
                 except dns.exception.Timeout:
                     log.warning("Name server {0} not responding. We assume it's just bad luck and we continue...".format(x))
                     continue
+                txt = set()
                 for y in resp.answer:
-                    txt = map(lambda x: str(x)[1:-1], y)
-                    if record not in txt:
-                        # the challenge has not been found (or an old one is still there)
-                        # we wait a little and check again.
-                        log.warning("_acme-challenge.{0} does not contain (only ?) {1} on nameserver {2}. Please manually check while we sleep for 1mn...".format(domain, record, x))
-                        addr.add(x)
-                        time.sleep(60)
+                    txt = txt.union(map(lambda x: str(x)[1:-1], y))
+                if record not in txt:
+                    # the challenge has not been found (or an old one is still there)
+                    # we wait a little and check again.
+                    log.warning("_acme-challenge.{0} does not contain (only ?) {1} on nameserver {2}. Please manually check while we sleep for 1mn...".format(domain, record, x))
+                    addr.add(x)
+                    time.sleep(60)
 
         # notify challenge are met
         code, result = _send_signed_request(challenge['uri'], {
