@@ -13,12 +13,12 @@ Before launching it, you need to have :
 * write access to the DNS zone of the domain(s) (can't help you with that)
 
 Cons /acme-tiny-http :
-* at the moment, need a manual intervention to update the DNS zone, which defeats the Let's Encrypt's "fire and forget" style.
-* for example : in consequence, you will also need to set a reminder or to monitor the validity of the certificate.
+* at the moment, needs a manual intervention to update the DNS zone, which defeats the Let's Encrypt's "fire and forget" style.
+* in consequence, you will also need to set a reminder or to monitor the validity of the certificate (search for `contact` or `mailto` in the script to add an email address to your LE account. Not tested.)
 
 Pros /acme-tiny-http :
 * doesn't need access to a web server,
-* doesn't need to run on a server, just copy-paste the DNS challenge,
+* doesn't need to run on a server, just copy-paste the DNS challenge to your DNS administration interface,
 * Let's Encrypt doesn't even need to access the server which will receive the certificate. Given the distinction between a domain and a zone in DNS, you only need to be able to add the record `_acme-challenge.private-jabber-service.private-network.example.org. IN TXT 123challengeXYZ` in your public DNS zone file for `example.org`.
 
 The only system prerequisites are python (+dns library) and openssl.
@@ -84,12 +84,12 @@ The ACME protocol (what Let's Encrypt uses) requires a CSR file to be submitted
 to it, even for renewals. You can use the same CSR for multiple renewals. NOTE:
 you can't use your account private key as your domain private key!
 
-```
+```sh
 #generate a domain private key (if you haven't already)
 openssl genrsa 4096 > domain.key
 ```
 
-```
+```sh
 #for a single domain
 openssl req -new -sha256 -key domain.key -subj "/CN=yoursite.com" > domain.csr
 
@@ -120,9 +120,12 @@ Press enter to continue after updating DNS server
 # (see below note)
 
 Verifying smtp.example.org part 2...
+Locally checking challenge on 2a01:e35:1234:5678::baba:5353...
+Locally checking challenge on 12.34.56.78...
 smtp.example.org verified!
 Signing certificate...
 Certificate signed!
+You can now remove the _acme-challenge records from your DNS zone.
 ```
 
 Note on updating the DNS zone file :
@@ -138,7 +141,7 @@ dig @ip.of.one.of.the.primary.nameservers.for.the.zone _acme-challenge.smtp.exam
 Once the challenge is over, you can remove the TXT record from the DNS zone file.
 You can keep the CSR file and must keep the account.key file for the next renewal.
 
-The signed https certificate that is output by this script can be used along
+The signed certificate that is output by this script can be used along
 with your private key to run an https server. You need to include them in the
 https settings in your web server's configuration. Here's an example on how to
 configure an nginx server:

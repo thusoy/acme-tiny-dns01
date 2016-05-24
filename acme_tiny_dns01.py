@@ -191,6 +191,7 @@ def get_crt(account_key, csr, skip_check=False, log=LOGGER, CA=DEFAULT_CA):
 
     # return signed certificate!
     log.info("Certificate signed!")
+    log.info("You can now remove the _acme-challenge records from your DNS zone.")
     return """-----BEGIN CERTIFICATE-----\n{0}\n-----END CERTIFICATE-----\n""".format(
         "\n".join(textwrap.wrap(base64.b64encode(result).decode('utf8'), 64)))
 
