@@ -145,7 +145,7 @@ def get_crt(account_key, csr, skip_check=False, log=LOGGER, CA=DEFAULT_CA):
                 txt = set()
                 for y in resp.answer:
                     txt = txt.union(map(lambda x: str(x)[1:-1], y))
-                if record not in txt:
+                if len(txt) != 1 or record not in txt:
                     # the challenge has not been found (or an old one is still there)
                     # we wait a little and check again.
                     log.warning("_acme-challenge.{0} does not contain (only ?) {1} on nameserver {2}. Please manually check while we sleep for 1mn...".format(domain, record, x))
