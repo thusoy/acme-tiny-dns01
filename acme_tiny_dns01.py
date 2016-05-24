@@ -126,19 +126,30 @@ def get_crt(account_key, csr, skip_check=False, log=LOGGER, CA=DEFAULT_CA):
         challenge, token, keyauthorization, record = pending[domain]
 
         if not skip_check:
-            # check that the file is in place
+            # get the IP address of all the primary servers for the current domain
             addr = set()
             for x in dns.resolver.query(dns.resolver.zone_for_name(domain), 'NS'):
                 addr = addr.union(map(str, dns.resolver.query(str(x), 'A')))
                 addr = addr.union(map(str, dns.resolver.query(str(x), 'AAAA')))
 
-            for x in addr:
+            # check directly on each NS server of the current domain, if the challenge is in place
+            while len(addr):
+                x = addr.pop()
+                log.info("Locally checking challenge on {0}...".format(x))
                 req = dns.message.make_query('_acme-challenge.%s' % domain, 'TXT')
-                resp = dns.query.udp(req, x, timeout=30)
+                try:
+                    resp = dns.query.udp(req, x, timeout=30)
+                except dns.exception.Timeout:
+                    log.warning("Name server {0} not responding. We assume it's just bad luck and we continue...".format(x))
+                    continue
                 for y in resp.answer:
                     txt = map(lambda x: str(x)[1:-1], y)
                     if record not in txt:
-                        raise ValueError("_acme-challenge.{0} does not contain {1} on nameserver {2}".format(domain, record, x))
+                        # the challenge has not been found (or an old one is still there)
+                        # we wait a little and check again.
+                        log.warning("_acme-challenge.{0} does not contain (only ?) {1} on nameserver {2}. Please manually check while we sleep for 1mn...".format(domain, record, x))
+                        addr.add(x)
+                        time.sleep(60)
 
         # notify challenge are met
         code, result = _send_signed_request(challenge['uri'], {
