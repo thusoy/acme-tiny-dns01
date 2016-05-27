@@ -1,7 +1,7 @@
 # acme-tiny-dns01
 
 ## Quick test
-```
+```sh
 sudo apt install python python-dnspython openssl ca-certificates
 openssl genrsa 4096 > account.key
 openssl genrsa 2048 > domain.key
@@ -40,7 +40,7 @@ Pros /acme-tiny-http :
 * Let's Encrypt doesn't even need to access the server which will receive the certificate. Given the distinction between a domain and a zone in DNS, you only need to be able to add the record `_acme-challenge.private-jabber-service.private-network.example.org. IN TXT 123challengeXYZ` in your public DNS zone file for `example.org`.
 
 The only system prerequisites are python (+dns library) and openssl.
-```
+```sh
 # On debian/ubuntu (ca-certificates needed to authenticate Let's Encrypt HTTPS servers)
 apt install python python-dnspython openssl ca-certificates
 ```
