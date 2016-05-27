@@ -13,7 +13,7 @@ DEFAULT_CA = "https://acme-v01.api.letsencrypt.org"
 
 LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(logging.StreamHandler())
-LOGGER.setLevel(logging.INFO)
+LOGGER.setLevel(logging.DEBUG)
 
 def get_crt(account_key, csr, skip_check=False, log=LOGGER, CA=DEFAULT_CA):
     # helper function base64 encode for jose spec
@@ -21,7 +21,7 @@ def get_crt(account_key, csr, skip_check=False, log=LOGGER, CA=DEFAULT_CA):
         return base64.urlsafe_b64encode(b).decode('utf8').replace("=", "")
 
     # parse account key to get public key
-    log.info("Parsing account key...")
+    log.debug("Parsing account key...")
     proc = subprocess.Popen(["openssl", "rsa", "-in", account_key, "-noout", "-text"],
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, err = proc.communicate()
@@ -65,7 +65,7 @@ def get_crt(account_key, csr, skip_check=False, log=LOGGER, CA=DEFAULT_CA):
             return getattr(e, "code", None), getattr(e, "read", e.__str__)()
 
     # find domains
-    log.info("Parsing CSR...")
+    log.debug("Parsing CSR...")
     proc = subprocess.Popen(["openssl", "req", "-in", csr, "-noout", "-text"],
         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, err = proc.communicate()
@@ -82,16 +82,16 @@ def get_crt(account_key, csr, skip_check=False, log=LOGGER, CA=DEFAULT_CA):
                 domains.add(san[4:])
 
     # get the certificate domains and expiration
-    log.info("Registering account...")
+    log.debug("Registering account...")
     code, result = _send_signed_request(CA + "/acme/new-reg", {
         "resource": "new-reg",
         #"contact": [ "mailto:postmaster@example.com" ],
         "agreement": "https://letsencrypt.org/documents/LE-SA-v1.0.1-July-27-2015.pdf",
     })
     if code == 201:
-        log.info("Registered!")
+        log.debug("Registered!")
     elif code == 409:
-        log.info("Already registered!")
+        log.debug("Already registered!")
     else:
         raise ValueError("Error registering: {0} {1}".format(code, result))
 
@@ -99,7 +99,7 @@ def get_crt(account_key, csr, skip_check=False, log=LOGGER, CA=DEFAULT_CA):
 
     # verify each domain
     for domain in domains:
-        log.info("Verifying {0} part 1...".format(domain))
+        log.debug("Getting challenge for {0}...".format(domain))
 
         # get new challenge
         code, result = _send_signed_request(CA + "/acme/new-authz", {
@@ -121,11 +121,10 @@ def get_crt(account_key, csr, skip_check=False, log=LOGGER, CA=DEFAULT_CA):
 
     # verify each domain
     for domain in pending.keys():
-        log.info("Verifying {0} part 2...".format(domain))
-
         challenge, token, keyauthorization, record = pending[domain]
 
         if not skip_check:
+            log.debug("Local checks on {0}...".format(domain))
             # get the IP address of all the primary servers for the current domain
             addr = set()
             for x in dns.resolver.query(dns.resolver.zone_for_name(domain), 'NS'):
@@ -135,12 +134,12 @@ def get_crt(account_key, csr, skip_check=False, log=LOGGER, CA=DEFAULT_CA):
             # check directly on each name server of the current domain, if the challenge is in place
             while len(addr):
                 x = addr.pop()
-                log.info("Locally checking challenge on {0}...".format(x))
+                log.debug("Locally checking challenge on {0}...".format(x))
                 req = dns.message.make_query('_acme-challenge.%s' % domain, 'TXT')
                 try:
                     resp = dns.query.udp(req, x, timeout=30)
                 except dns.exception.Timeout:
-                    log.warning("Name server {0} not responding. We assume it's just bad luck and we continue...".format(x))
+                    log.warning("Name server {0} not responding. We assume it's just bad luck and we ignore...".format(x))
                     continue
                 txt = set()
                 for y in resp.answer:
@@ -148,11 +147,12 @@ def get_crt(account_key, csr, skip_check=False, log=LOGGER, CA=DEFAULT_CA):
                 if len(txt) != 1 or record not in txt:
                     # the challenge has not been found (or an old one is still there)
                     # we wait a little and check again.
-                    log.warning("_acme-challenge.{0} does not contain (only ?) {1} on nameserver {2}. Please manually check while we sleep for 1mn...".format(domain, record, x))
+                    log.warning("_acme-challenge.{0} does not contain (only ?) {1} on nameserver {2}. We sleep for 1mn before checking again...".format(domain, record, x))
                     addr.add(x)
                     time.sleep(60)
 
         # notify challenge are met
+        log.debug("Asking authority to verify challenge {0}...".format(domain))
         code, result = _send_signed_request(challenge['uri'], {
             "resource": "challenge",
             "keyAuthorization": keyauthorization,
@@ -171,14 +171,14 @@ def get_crt(account_key, csr, skip_check=False, log=LOGGER, CA=DEFAULT_CA):
             if challenge_status['status'] == "pending":
                 time.sleep(2)
             elif challenge_status['status'] == "valid":
-                log.info("{0} verified!".format(domain))
+                log.debug("{0} verified!".format(domain))
                 break
             else:
                 raise ValueError("{0} challenge did not pass: {1}".format(
                     domain, challenge_status))
 
     # get the new certificate
-    log.info("Signing certificate...")
+    log.debug("Signing certificate...")
     proc = subprocess.Popen(["openssl", "req", "-in", csr, "-outform", "DER"],
         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     csr_der, err = proc.communicate()
@@ -190,8 +190,8 @@ def get_crt(account_key, csr, skip_check=False, log=LOGGER, CA=DEFAULT_CA):
         raise ValueError("Error signing certificate: {0} {1}".format(code, result))
 
     # return signed certificate!
-    log.info("Certificate signed!")
-    log.info("You can now remove the _acme-challenge records from your DNS zone.")
+    log.debug("Certificate signed!")
+    log.debug("You can now remove the _acme-challenge records from your DNS zone.")
     return """-----BEGIN CERTIFICATE-----\n{0}\n-----END CERTIFICATE-----\n""".format(
         "\n".join(textwrap.wrap(base64.b64encode(result).decode('utf8'), 64)))
 
@@ -211,7 +211,7 @@ def main(argv):
     )
     parser.add_argument("--account-key", required=True, help="path to your Let's Encrypt account private key")
     parser.add_argument("--csr", required=True, help="path to your certificate signing request")
-    parser.add_argument("--quiet", action="store_const", const=logging.ERROR, help="suppress output except for errors")
+    parser.add_argument("--quiet", action="store_const", const=logging.INFO, help="suppress output except for errors")
     parser.add_argument("--skip", action="store_true", help="skip checking for DNS records")
     parser.add_argument("--ca", default=DEFAULT_CA, help="certificate authority, default is Let's Encrypt")
 

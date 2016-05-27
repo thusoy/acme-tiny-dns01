@@ -1,5 +1,23 @@
 # acme-tiny-dns01
 
+## Quick test
+```
+sudo apt install python python-dnspython openssl ca-certificates
+openssl genrsa 4096 > account.key
+openssl genrsa 2048 > domain.key
+openssl req -new -sha256 -key domain.key -subj "/CN=yoursite.com" > domain.csr
+python acme_tiny_dns01.py --account-key ./account.key --csr ./domain.csr --ca "https://acme-staging.api.letsencrypt.org" --quiet > ./signed.crt
+# Copy-paste the DNS record to your DNS management interface and press [enter]
+```
+
+You can check the result with :
+```
+openssl x509 -noout -text -in signed.crt
+```
+
+
+## Intro
+
 This script is an adaptation of [https://github.com/diafygi/acme-tiny](acme-tiny)
 for the dns-01 challenge protocol.
 
@@ -8,7 +26,7 @@ and renew [Let's Encrypt](https://letsencrypt.org/) certificates.
 However, at its current state, it cannot automate the renewal of a certificate.
 
 Before launching it, you need to have :
-* your account.key (see below for help)
+* your account.key (see below for help, keep preciously)
 * the CSR for the domain(s) (see below for help)
 * write access to the DNS zone of the domain(s) (can't help you with that)
 
@@ -132,13 +150,14 @@ Note on updating the DNS zone file :
 This is the time where you copy-paste the challenge to your DNS zone file.
 Please check it has been published before going on, with dig for example :
 ```
-dig @ip.of.one.of.the.primary.nameservers.for.the.zone _acme-challenge.smtp.example.org. TXT
+dig @ip.of.one.of.the.primary.nameservers.for.the.zone   _acme-challenge.smtp.example.org. TXT
 # (must display an answer section with the correct challenge)
 ```
 
 ### Step 4: Clean the zone file and install/update the certificate
 
 Once the challenge is over, you can remove the TXT record from the DNS zone file.
+
 You can keep the CSR file and must keep the account.key file for the next renewal.
 
 The signed certificate that is output by this script can be used along
