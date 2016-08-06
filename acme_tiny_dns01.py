@@ -15,7 +15,7 @@ LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(logging.StreamHandler())
 LOGGER.setLevel(logging.DEBUG)
 
-def get_crt(account_key, csr, skip_check=False, log=LOGGER, CA=DEFAULT_CA):
+def get_crt(account_key, csr, skip_check=False, log=LOGGER, CA=DEFAULT_CA, contact_mail=False):
     # helper function base64 encode for jose spec
     def _b64(b):
         return base64.urlsafe_b64encode(b).decode('utf8').replace("=", "")
@@ -81,13 +81,16 @@ def get_crt(account_key, csr, skip_check=False, log=LOGGER, CA=DEFAULT_CA):
             if san.startswith("DNS:"):
                 domains.add(san[4:])
 
-    # get the certificate domains and expiration
+    # register the account (or, if already registered, simply update the contact infos)
     log.debug("Registering account...")
-    code, result = _send_signed_request(CA + "/acme/new-reg", {
+    payload = {
         "resource": "new-reg",
-        #"contact": [ "mailto:postmaster@example.com" ],
         "agreement": "https://letsencrypt.org/documents/LE-SA-v1.1.1-August-1-2016.pdf",
-    })
+    }
+    if contact_mail:
+        payload["contact"] = [ "mailto:" + contact_mail ]
+
+    code, result = _send_signed_request(CA + "/acme/new-reg", payload)
     if code == 201:
         log.debug("Registered!")
     elif code == 409:
@@ -214,10 +217,11 @@ def main(argv):
     parser.add_argument("--quiet", action="store_const", const=logging.INFO, help="suppress output except for errors")
     parser.add_argument("--skip", action="store_true", help="skip checking for DNS records")
     parser.add_argument("--ca", default=DEFAULT_CA, help="certificate authority, default is Let's Encrypt")
+    parser.add_argument("--contact-mail", help="an optional email address to receive expiration alerts from Let's Encrypt")
 
     args = parser.parse_args(argv)
     LOGGER.setLevel(args.quiet or LOGGER.level)
-    signed_crt = get_crt(args.account_key, args.csr, args.skip, log=LOGGER, CA=args.ca)
+    signed_crt = get_crt(args.account_key, args.csr, args.skip, log=LOGGER, CA=args.ca, contact_mail=args.contact_mail)
     sys.stdout.write(signed_crt)
 
 if __name__ == "__main__": # pragma: no cover
