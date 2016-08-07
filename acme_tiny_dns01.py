@@ -100,7 +100,7 @@ def get_crt(account_key, csr, skip_check=False, log=LOGGER, CA=DEFAULT_CA, conta
 
     pending = {}
 
-    # verify each domain
+    # get the challenge for each domain
     for domain in domains:
         log.debug("Getting challenge for {0}...".format(domain))
 
@@ -122,11 +122,10 @@ def get_crt(account_key, csr, skip_check=False, log=LOGGER, CA=DEFAULT_CA, conta
     log.info('Press enter to continue after updating DNS server')
     raw_input()
 
-    # verify each domain
-    for domain in pending.keys():
-        challenge, token, keyauthorization, record = pending[domain]
-
-        if not skip_check:
+    # verify locally that all challenges are in place
+    if not skip_check:
+        for domain in pending.keys():
+            challenge, token, keyauthorization, record = pending[domain]
             log.debug("Local checks on {0}...".format(domain))
             # get the IP address of all the primary servers for the current domain
             addr = set()
@@ -154,7 +153,9 @@ def get_crt(account_key, csr, skip_check=False, log=LOGGER, CA=DEFAULT_CA, conta
                     addr.add(x)
                     time.sleep(60)
 
-        # notify challenge are met
+    # ask Let's Encrypt to verify each challenge
+    for domain in pending.keys():
+        challenge, token, keyauthorization, record = pending[domain]
         log.debug("Asking authority to verify challenge {0}...".format(domain))
         code, result = _send_signed_request(challenge['uri'], {
             "resource": "challenge",
