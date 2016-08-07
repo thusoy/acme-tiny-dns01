@@ -62,7 +62,7 @@ you should only have to do Steps 3 and 4.
 ### Step 1: Create a Let's Encrypt account private key (if you haven't already)
 
 To reuse a key created by official Let's Encrypt Certbot key, see
-[the annex below](#use-existing-lets-encrypt-key).
+[the annex below](#user-content-use-existing-lets-encrypt-key).
 
 You must have a key that this script will use to register/authenticate you
 to Let's Encrypt and to sign your requests. If you don't understand what I
