@@ -95,19 +95,21 @@ openssl req -new -sha256 -key domain.key -subj "/CN=yoursite.com" > domain.csr
 openssl req -new -sha256 -key domain.key -subj "/" -reqexts SAN -config <(cat /etc/ssl/openssl.cnf <(printf "[SAN]\nsubjectAltName=DNS:yoursite.com,DNS:www.yoursite.com")) > domain.csr
 ```
 
-### Step 3: Insert the DNS challenge in your zone
+### Step 3: Launch the script and insert the DNS challenge(s) in your zone
 
-You must prove you own the domains you want a certificate for, so Let's Encrypt
-requires you to insert some DNS info on them. This script will generate those
-infos and you will have to insert it yourself in the zone file of each domain.
+Let's Encrypt mechanism requires you to prove that you own the domain(s) for
+which you want a certificate. This script will negotiate a challenge with
+Let's Encrypt and will generate the DNS record(s). You will have to
+temporarily insert this(those) record(s) yourself in the zone file of
+each domain.
 
-Just launch the script. For example :
+Launch the script with the account key and the domain CSR. For example :
 ```sh
 python acme_tiny_dns01.py --account-key ./account.key --csr ./domain.csr --contact-mail webmaster@example.org > ./signed.crt
 ```
 The `--contact-mail` option is optional but will allow Let's Encrypt to
 contact you and alert you when the certificate will be about to expire
-(~20 days before).
+(caution, there is no garantee: https://community.letsencrypt.org/t/expiration-emails-too-many-unnecessary-etc/9502).
 
 It should go like that :
 ```
