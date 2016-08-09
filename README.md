@@ -19,7 +19,8 @@ openssl x509 -noout -text -in signed.crt
 ## Intro
 
 This script is an adaptation of [https://github.com/diafygi/acme-tiny](acme-tiny)
-for the dns-01 challenge protocol.
+for the dns-01 challenge protocol. It is useful when your server can not or should not
+expose a public HTTP port.
 
 Similarly, this is a tiny, auditable script that you can use to issue
 and renew [Let's Encrypt](https://letsencrypt.org/) certificates.
@@ -64,12 +65,12 @@ you should only have to do Steps 3 and 4.
 To reuse a key created by official Let's Encrypt Certbot key, see
 [the annex below](#user-content-use-existing-lets-encrypt-key).
 
-You must have a key that this script will use to register/authenticate you
-to Let's Encrypt and to sign your requests. If you don't understand what I
-just said, this script likely isn't for you! Please use the official Let's Encrypt
-[client](https://github.com/certbot/certbot).
+You must have an account key that this script will use to register/authenticate
+you to Let's Encrypt and to sign your requests. If you don't understand what I
+just said, this script likely isn't for you! Please use the official
+[Let's Encrypt client](https://github.com/certbot/certbot).
 
-To initially create your key :
+To initially create your account key :
 ```
 openssl genrsa 4096 > account.key
 ```
@@ -109,7 +110,7 @@ python acme_tiny_dns01.py --account-key ./account.key --csr ./domain.csr --conta
 ```
 The `--contact-mail` option is optional but will allow Let's Encrypt to
 contact you and alert you when the certificate will be about to expire
-(caution, there is no garantee: https://community.letsencrypt.org/t/expiration-emails-too-many-unnecessary-etc/9502).
+(caution, there is no guarantee: https://community.letsencrypt.org/t/expiration-emails-too-many-unnecessary-etc/9502).
 
 It should go like that :
 ```

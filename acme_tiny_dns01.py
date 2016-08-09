@@ -218,7 +218,7 @@ def main(argv):
     parser.add_argument("--quiet", action="store_const", const=logging.INFO, help="suppress output except for errors")
     parser.add_argument("--skip", action="store_true", help="skip checking for DNS records")
     parser.add_argument("--ca", default=DEFAULT_CA, help="certificate authority, default is Let's Encrypt")
-    parser.add_argument("--contact-mail", help="an optional email address to receive expiration alerts from Let's Encrypt")
+    parser.add_argument("--contact-mail", help="an optional email address to receive expiration alerts from Let's Encrypt (no guarantee)")
 
     args = parser.parse_args(argv)
     LOGGER.setLevel(args.quiet or LOGGER.level)
