@@ -1,0 +1,174 @@
+<h1>acme-tiny-dns01</h1>
+<h2>Quick test</h2>
+<pre><code class="language-sh">sudo apt install python python-dnspython openssl ca-certificates
+openssl genrsa <span class="hljs-number">4096</span> &gt; account.key
+openssl genrsa <span class="hljs-number">2048</span> &gt; domain.key
+openssl req -new -sha256 -key domain.key -subj <span class="hljs-string">"/CN=yoursite.com"</span> &gt; domain.csr
+python acme_tiny_dns01.py --account-key ./account.key --csr ./domain.csr --ca <span class="hljs-string">"https://acme-staging.api.letsencrypt.org"</span> --quiet &gt; ./signed.crt
+<span class="hljs-comment"># Copy-paste the DNS record to your DNS management interface and press [enter]</span>
+</code></pre>
+<p>You can check the result with :</p>
+<pre><code>openssl x509 -noout -text -in signed.crt
+</code></pre>
+<h2>Intro</h2>
+<p>This script is an adaptation of <a href="acme-tiny">https://github.com/diafygi/acme-tiny</a>
+for the dns-01 challenge protocol. It is useful when your server can not or should not
+expose a public HTTP port.</p>
+<p>Similarly, this is a tiny, auditable script that you can use to issue
+and renew <a href="https://letsencrypt.org/">Let's Encrypt</a> certificates.
+However, at its current state, it cannot automate the renewal of a certificate.</p>
+<p>Before launching it, you need to have :</p>
+<ul>
+<li>your account.key (see below for help, keep preciously)</li>
+<li>the CSR for the domain(s) (see below for help)</li>
+<li>write access to the DNS zone of the domain(s) (can't help you with that)</li>
+</ul>
+<p>Cons /acme-tiny-http :</p>
+<ul>
+<li>at the moment, needs a manual intervention to update the DNS zone, which defeats the Let's Encrypt's "fire and forget" style.</li>
+<li>in consequence, you will also need to set a reminder or to monitor the validity of the certificate (see option <code>--contact-mail</code>)</li>
+</ul>
+<p>Pros /acme-tiny-http :</p>
+<ul>
+<li>doesn't need access to a web server,</li>
+<li>doesn't need to run on a server, just copy-paste the DNS challenge to your DNS administration interface,</li>
+<li>Let's Encrypt doesn't even need to access the server which will receive the certificate. Given the distinction between a domain and a zone in DNS, you only need to be able to add the record <code>_acme-challenge.private-jabber-service.private-network.example.org. IN TXT 123challengeXYZ</code> in your public DNS zone file for <code>example.org</code>.</li>
+</ul>
+<p>The only system prerequisites are python (+dns library) and openssl.</p>
+<pre><code class="language-sh"><span class="hljs-comment"># On debian/ubuntu (ca-certificates needed to authenticate Let's Encrypt HTTPS servers)</span>
+apt install python python-dnspython openssl ca-certificates
+</code></pre>
+<p><strong>PLEASE READ THE SOURCE CODE! YOU MUST TRUST IT WITH YOUR PRIVATE KEYS!</strong></p>
+<h2>Donate</h2>
+<p>If this script is useful to you, please donate to the EFF. I don't work there,
+but they do fantastic work.</p>
+<p><a href="https://eff.org/donate/">https://eff.org/donate/</a></p>
+<h2>How to use this script</h2>
+<p>If you already have a Let's Encrypt issued certificate and just want to renew,
+you should only have to do Steps 3 and 4.</p>
+<h3>Step 1: Create a Let's Encrypt account private key (if you haven't already)</h3>
+<p>To reuse a key created by official Let's Encrypt Certbot key, see
+<a href="#user-content-use-existing-lets-encrypt-key">the annex below</a>.</p>
+<p>You must have an account key that this script will use to register/authenticate
+you to Let's Encrypt and to sign your requests. If you don't understand what I
+just said, this script likely isn't for you! Please use the official
+<a href="https://github.com/certbot/certbot">Let's Encrypt client</a>.</p>
+<p>To initially create your account key :</p>
+<pre><code>openssl genrsa 4096 &gt; account.key
+</code></pre>
+<p>Like a password, keep this account key preciously !</p>
+<h3>Step 2: Create a certificate signing request (CSR) for your domains.</h3>
+<p>The ACME protocol (what Let's Encrypt uses) requires a CSR file to be submitted
+to it, even for renewals. You can use the same CSR for multiple renewals. NOTE:
+you can't use your account private key as your domain private key!</p>
+<pre><code class="language-sh"><span class="hljs-comment">#generate a domain private key (if you haven't already)</span>
+openssl genrsa <span class="hljs-number">4096</span> &gt; domain.key
+</code></pre>
+<pre><code class="language-sh"><span class="hljs-comment">#for a single domain</span>
+openssl req -new -sha256 -key domain.key -subj <span class="hljs-string">"/CN=yoursite.com"</span> &gt; domain.csr
+
+<span class="hljs-comment">#for multiple domains (use this one if you want both www.yoursite.com and yoursite.com)</span>
+openssl req -new -sha256 -key domain.key -subj <span class="hljs-string">"/"</span> -reqexts SAN -config &lt;(cat /etc/ssl/openssl.cnf &lt;(<span class="hljs-built_in">printf</span> <span class="hljs-string">"[SAN]\nsubjectAltName=DNS:yoursite.com,DNS:www.yoursite.com"</span>)) &gt; domain.csr
+</code></pre>
+<h3>Step 3: Launch the script and insert the DNS challenge(s) in your zone</h3>
+<p>Let's Encrypt mechanism requires you to prove that you own the domain(s) for
+which you want a certificate. This script will negotiate a challenge with
+Let's Encrypt and will generate the DNS record(s). You will have to
+temporarily insert this(those) record(s) yourself in the zone file of
+each domain.</p>
+<p>Launch the script with the account key and the domain CSR. For example :</p>
+<pre><code class="language-sh">python acme_tiny_dns01.py --account-key ./account.key --csr ./domain.csr --contact-mail webmaster@example.org &gt; ./signed.crt
+</code></pre>
+<p>The <code>--contact-mail</code> option is optional but will allow Let's Encrypt to
+contact you and alert you when the certificate will be about to expire
+(caution, there is no guarantee: <a href="https://community.letsencrypt.org/t/expiration-emails-too-many-unnecessary-etc/9502">https://community.letsencrypt.org/t/expiration-emails-too-many-unnecessary-etc/9502</a>).</p>
+<p>It should go like that :</p>
+<pre><code>Parsing account key...
+Parsing CSR...
+Registering account...
+Already registered!
+Getting challenge for smtp.example.org...
+_acme-challenge.smtp.example.org. 300 IN TXT QX4c_VKaZQnMnMhaxvQ0IH73JmOdFt5lOw8IMmmliyE
+Press enter to continue after updating DNS server
+# (see below note)
+
+Local checks on smtp.example.org...
+Locally checking challenge on 2a01:e35:1234:5678::baba:5353...
+Locally checking challenge on 12.34.56.78...
+Asking authority to verify challenge smtp.example.org...
+smtp.example.org verified!
+Signing certificate...
+Certificate signed!
+You can now remove the _acme-challenge records from your DNS zone.
+</code></pre>
+<p>Note on updating the DNS zone file :
+This is the time where you copy-paste the challenge(s) to your DNS zone file.
+Please check it has been published before going on, with dig for example :</p>
+<pre><code>dig @ip.of.one.of.the.primary.nameservers.for.the.zone   _acme-challenge.smtp.example.org. TXT
+# (must display an answer section with the correct challenge)
+</code></pre>
+<h3>Step 4: Clean the zone file</h3>
+<p>Once the challenge is over, you can remove the TXT record from the DNS zone file.</p>
+<p>Install the new certificate to the appropriate location (see your software doc.
+Nginx example given below).</p>
+<p>You should keep the CSR file for the next renewals and <strong>must</strong> keep the account.key file.</p>
+<h2>Annex</h2>
+<h3>Use existing Let's Encrypt key</h3>
+<p>If you switched from official Let's Encrypt Certbot to this script, you will have
+some conversion to do.</p>
+<p>The private account key from the Let's Encrypt client is saved in the
+<a href="https://tools.ietf.org/html/rfc7517">JWK</a> format. <code>acme-tiny</code> is using the PEM
+key format. To convert the key, you can use the tool
+<a href="https://gist.github.com/JonLundy/f25c99ee0770e19dc595">conversion script</a> by JonLundy:</p>
+<pre><code class="language-sh"><span class="hljs-comment"># Download the script</span>
+wget -O - <span class="hljs-string">"https://gist.githubusercontent.com/JonLundy/f25c99ee0770e19dc595/raw/6035c1c8938fae85810de6aad1ecf6e2db663e26/conv.py"</span> &gt; conv.py
+
+<span class="hljs-comment"># Copy your private key to your working directory</span>
+cp /etc/letsencrypt/accounts/acme-v01.api.letsencrypt.org/directory/&lt;id&gt;/private_key.json private_key.json
+
+<span class="hljs-comment"># Create a DER encoded private key</span>
+openssl asn1parse -noout -out private_key.der -genconf &lt;(python conv.py private_key.json)
+
+<span class="hljs-comment"># Convert to PEM</span>
+openssl rsa -in private_key.der -inform der &gt; account.key
+</code></pre>
+<h3>Install the certificate on nginx</h3>
+<p>The signed certificate that is output by this script can be used along
+with the domain private key to run an https server. You need to include them in the
+https settings in your web server's configuration. Here's an example on how to
+configure an nginx server:</p>
+<pre><code>#NOTE: For nginx, you need to append the Let's Encrypt intermediate cert to your cert
+wget -O - https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem &gt; intermediate.pem
+cat signed.crt intermediate.pem &gt; chained.pem
+</code></pre>
+<pre><code class="language-nginx">server {
+    listen 443;
+    server_name yoursite.com, www.yoursite.com;
+
+    ssl on;
+    ssl_certificate /path/to/chained.pem;
+    ssl_certificate_key /path/to/domain.key;
+    ssl_session_timeout 5m;
+    ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+    ssl_ciphers ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES128-SHA256:ECDHE-RSA-AES256-SHA:ECDHE-RSA-AES128-SHA:DHE-RSA-AES256-SHA:DHE-RSA-AES128-SHA;
+    ssl_session_cache shared:SSL:50m;
+    ssl_dhparam /path/to/server.dhparam;
+    ssl_prefer_server_ciphers on;
+
+    ...the rest of your config
+}
+
+server {
+    listen 80;
+    server_name yoursite.com, www.yoursite.com;
+
+    ...the rest of your config
+}
+</code></pre>
+<h2>Feedback/Contributing</h2>
+<p>This project has a very, very limited scope and codebase. I'm happy to receive
+bug reports and pull requests, but please don't add any new features. This
+script must stay under 200 lines of code to ensure it can be easily audited by
+anyone who wants to run it.</p>
+<p>If you want to add features for your own setup to make things easier for you,
+please do! It's open source, so feel free to fork it and modify as necessary.</p>
