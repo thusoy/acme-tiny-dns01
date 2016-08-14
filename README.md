@@ -18,8 +18,9 @@ openssl x509 -noout -text -in signed.crt
 
 ## Intro
 
-This script is an adaptation of [https://github.com/diafygi/acme-tiny](acme-tiny)
-for the dns-01 challenge protocol. It is useful when your server can not or should not
+This script is an adaptation of [acme-tiny](https://github.com/diafygi/acme-tiny)
+for the dns-01 challenge protocol (big thanks to [Nuxi](https://github.com/nuxi/acme-tiny),
+most of the adaptation work was done by him). It is useful when your server can not or should not
 expose a public HTTP port.
 
 Similarly, this is a tiny, auditable script that you can use to issue

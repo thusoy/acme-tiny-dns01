@@ -1,4 +1,3 @@
-<h1>acme-tiny-dns01</h1>
 <h2>Quick test</h2>
 <pre><code class="language-sh">sudo apt install python python-dnspython openssl ca-certificates
 openssl genrsa <span class="hljs-number">4096</span> &gt; account.key
@@ -11,8 +10,9 @@ python acme_tiny_dns01.py --account-key ./account.key --csr ./domain.csr --ca <s
 <pre><code>openssl x509 -noout -text -in signed.crt
 </code></pre>
 <h2>Intro</h2>
-<p>This script is an adaptation of <a href="acme-tiny">https://github.com/diafygi/acme-tiny</a>
-for the dns-01 challenge protocol. It is useful when your server can not or should not
+<p>This script is an adaptation of <a href="https://github.com/diafygi/acme-tiny">https://github.com/diafygi/acme-tiny</a>
+for the dns-01 challenge protocol (big thanks to <a href="https://github.com/nuxi/acme-tiny">Nuxi</a>, most
+of the adaptation work was done by him). It is useful when your server can not or should not
 expose a public HTTP port.</p>
 <p>Similarly, this is a tiny, auditable script that you can use to issue
 and renew <a href="https://letsencrypt.org/">Let's Encrypt</a> certificates.
