@@ -2,6 +2,7 @@
 
 ## Quick test
 ```sh
+wget "https://raw.githubusercontent.com/bugness-chl/acme-tiny-dns01/dns/acme_tiny_dns01.py"
 sudo apt install python python-dnspython openssl ca-certificates
 openssl genrsa 4096 > account.key
 openssl genrsa 2048 > domain.key
@@ -35,7 +36,7 @@ Before launching it, you need to have :
 The only system prerequisites are python (+dns library) and openssl.
 ```sh
 # On debian/ubuntu (ca-certificates needed to authenticate Let's Encrypt HTTPS servers)
-apt install python python-dnspython openssl ca-certificates
+sudo apt install python python-dnspython openssl ca-certificates
 ```
 
 Cons /acme-tiny-http :

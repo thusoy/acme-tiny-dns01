@@ -1,5 +1,6 @@
 <h2>Quick test</h2>
-<pre><code class="language-sh">sudo apt install python python-dnspython openssl ca-certificates
+<pre><code class="language-sh">wget "https://raw.githubusercontent.com/bugness-chl/acme-tiny-dns01/dns/acme_tiny_dns01.py"
+sudo apt install python python-dnspython openssl ca-certificates
 openssl genrsa <span class="hljs-number">4096</span> &gt; account.key
 openssl genrsa <span class="hljs-number">2048</span> &gt; domain.key
 openssl req -new -sha256 -key domain.key -subj <span class="hljs-string">"/CN=yoursite.com"</span> &gt; domain.csr
@@ -25,7 +26,7 @@ However, at its current state, it cannot automate the renewal of a certificate.<
 </ul>
 <p>The only system prerequisites are python (+dns library) and openssl.</p>
 <pre><code class="language-sh"><span class="hljs-comment"># On debian/ubuntu (ca-certificates needed to authenticate Let's Encrypt HTTPS servers)</span>
-apt install python python-dnspython openssl ca-certificates
+sudo apt install python python-dnspython openssl ca-certificates
 </code></pre>
 <p>Cons /acme-tiny-http :</p>
 <ul>
