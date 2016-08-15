@@ -23,6 +23,10 @@ However, at its current state, it cannot automate the renewal of a certificate.<
 <li>the CSR for the domain(s) (see below for help)</li>
 <li>write access to the DNS zone of the domain(s) (can't help you with that)</li>
 </ul>
+<p>The only system prerequisites are python (+dns library) and openssl.</p>
+<pre><code class="language-sh"><span class="hljs-comment"># On debian/ubuntu (ca-certificates needed to authenticate Let's Encrypt HTTPS servers)</span>
+apt install python python-dnspython openssl ca-certificates
+</code></pre>
 <p>Cons /acme-tiny-http :</p>
 <ul>
 <li>at the moment, needs a manual intervention to update the DNS zone, which defeats the Let's Encrypt's "fire and forget" style.</li>
@@ -34,10 +38,6 @@ However, at its current state, it cannot automate the renewal of a certificate.<
 <li>doesn't need to run on a server, just copy-paste the DNS challenge to your DNS administration interface,</li>
 <li>Let's Encrypt doesn't even need to access the server which will receive the certificate. Given the distinction between a domain and a zone in DNS, you only need to be able to add the record <code>_acme-challenge.private-jabber-service.private-network.example.org. IN TXT 123challengeXYZ</code> in your public DNS zone file for <code>example.org</code>.</li>
 </ul>
-<p>The only system prerequisites are python (+dns library) and openssl.</p>
-<pre><code class="language-sh"><span class="hljs-comment"># On debian/ubuntu (ca-certificates needed to authenticate Let's Encrypt HTTPS servers)</span>
-apt install python python-dnspython openssl ca-certificates
-</code></pre>
 <p><strong>PLEASE READ THE SOURCE CODE! YOU MUST TRUST IT WITH YOUR PRIVATE KEYS!</strong></p>
 <h2>Donate</h2>
 <p>If this script is useful to you, please donate to the EFF. I don't work there,
@@ -63,8 +63,8 @@ to it, even for renewals. You can use the same CSR for multiple renewals. NOTE:
 you can't use your account private key as your domain private key!</p>
 <pre><code class="language-sh"><span class="hljs-comment">#generate a domain private key (if you haven't already)</span>
 openssl genrsa <span class="hljs-number">4096</span> &gt; domain.key
-</code></pre>
-<pre><code class="language-sh"><span class="hljs-comment">#for a single domain</span>
+
+<span class="hljs-comment">#for a single domain</span>
 openssl req -new -sha256 -key domain.key -subj <span class="hljs-string">"/CN=yoursite.com"</span> &gt; domain.csr
 
 <span class="hljs-comment">#for multiple domains (use this one if you want both www.yoursite.com and yoursite.com)</span>

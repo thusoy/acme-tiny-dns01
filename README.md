@@ -32,6 +32,12 @@ Before launching it, you need to have :
 * the CSR for the domain(s) (see below for help)
 * write access to the DNS zone of the domain(s) (can't help you with that)
 
+The only system prerequisites are python (+dns library) and openssl.
+```sh
+# On debian/ubuntu (ca-certificates needed to authenticate Let's Encrypt HTTPS servers)
+apt install python python-dnspython openssl ca-certificates
+```
+
 Cons /acme-tiny-http :
 * at the moment, needs a manual intervention to update the DNS zone, which defeats the Let's Encrypt's "fire and forget" style.
 * in consequence, you will also need to set a reminder or to monitor the validity of the certificate (see option `--contact-mail`)
@@ -40,12 +46,6 @@ Pros /acme-tiny-http :
 * doesn't need access to a web server,
 * doesn't need to run on a server, just copy-paste the DNS challenge to your DNS administration interface,
 * Let's Encrypt doesn't even need to access the server which will receive the certificate. Given the distinction between a domain and a zone in DNS, you only need to be able to add the record `_acme-challenge.private-jabber-service.private-network.example.org. IN TXT 123challengeXYZ` in your public DNS zone file for `example.org`.
-
-The only system prerequisites are python (+dns library) and openssl.
-```sh
-# On debian/ubuntu (ca-certificates needed to authenticate Let's Encrypt HTTPS servers)
-apt install python python-dnspython openssl ca-certificates
-```
 
 **PLEASE READ THE SOURCE CODE! YOU MUST TRUST IT WITH YOUR PRIVATE KEYS!**
 
@@ -87,9 +87,7 @@ you can't use your account private key as your domain private key!
 ```sh
 #generate a domain private key (if you haven't already)
 openssl genrsa 4096 > domain.key
-```
 
-```sh
 #for a single domain
 openssl req -new -sha256 -key domain.key -subj "/CN=yoursite.com" > domain.csr
 
