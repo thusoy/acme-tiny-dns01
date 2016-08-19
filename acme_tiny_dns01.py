@@ -7,6 +7,7 @@ try:
     from urllib.request import urlopen # Python 3
 except ImportError:
     from urllib2 import urlopen # Python 2
+    input = raw_input
 
 #DEFAULT_CA = "https://acme-staging.api.letsencrypt.org"
 DEFAULT_CA = "https://acme-v01.api.letsencrypt.org"
@@ -115,12 +116,12 @@ def get_crt(account_key, csr, skip_check=False, log=LOGGER, CA=DEFAULT_CA, conta
         challenge = [c for c in json.loads(result.decode('utf8'))['challenges'] if c['type'] == "dns-01"][0]
         token = re.sub(r"[^A-Za-z0-9_\-]", "_", challenge['token'])
         keyauthorization = "{0}.{1}".format(token, thumbprint)
-        record = _b64(hashlib.sha256(keyauthorization).digest())
+        record = _b64(hashlib.sha256(keyauthorization.encode()).digest())
         log.info('_acme-challenge.%s. 300 IN TXT %s' % (domain, record))
         pending[domain] = (challenge, token, keyauthorization, record)
 
     log.info('Press enter to continue after updating DNS server')
-    raw_input()
+    input()
 
     # verify locally that all challenges are in place
     if not skip_check:
