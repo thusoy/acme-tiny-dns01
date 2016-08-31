@@ -135,7 +135,8 @@ You can now remove the _acme-challenge records from your DNS zone.
 
 Note on updating the DNS zone file :
 This is the time where you copy-paste the challenge(s) to your DNS zone file.
-Please check it has been published before going on, with dig for example :
+If you used the `--skip-check` option, please manually check the record has
+been published before pressing Enter. For example, with dig&nbsp;:
 ```
 dig @ip.of.one.of.the.primary.nameservers.for.the.zone   _acme-challenge.smtp.example.org. TXT
 # (must display an answer section with the correct challenge)

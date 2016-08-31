@@ -217,13 +217,13 @@ def main(argv):
     parser.add_argument("--account-key", required=True, help="path to your Let's Encrypt account private key")
     parser.add_argument("--csr", required=True, help="path to your certificate signing request")
     parser.add_argument("--quiet", action="store_const", const=logging.INFO, help="suppress output except for errors")
-    parser.add_argument("--skip", action="store_true", help="skip checking for DNS records")
+    parser.add_argument("--skip-check", action="store_true", help="skip checking for DNS records")
     parser.add_argument("--ca", default=DEFAULT_CA, help="certificate authority, default is Let's Encrypt")
     parser.add_argument("--contact-mail", help="an optional email address to receive expiration alerts from Let's Encrypt (no guarantee)")
 
     args = parser.parse_args(argv)
     LOGGER.setLevel(args.quiet or LOGGER.level)
-    signed_crt = get_crt(args.account_key, args.csr, args.skip, log=LOGGER, CA=args.ca, contact_mail=args.contact_mail)
+    signed_crt = get_crt(args.account_key, args.csr, args.skip_check, log=LOGGER, CA=args.ca, contact_mail=args.contact_mail)
     sys.stdout.write(signed_crt)
 
 if __name__ == "__main__": # pragma: no cover
