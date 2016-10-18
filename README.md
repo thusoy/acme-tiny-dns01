@@ -26,7 +26,8 @@ expose a public HTTP port.
 
 Similarly, this is a tiny, auditable script that you can use to issue
 and renew [Let's Encrypt](https://letsencrypt.org/) certificates.
-However, at its current state, it cannot automate the renewal of a certificate.
+However, at its current state, it needs manual intervention and thus
+cannot automate the renewal of a certificate.
 
 Before launching it, you need to have :
 * your account.key (see below for help, keep preciously)
