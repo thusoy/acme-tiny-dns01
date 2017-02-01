@@ -8,6 +8,7 @@ import json
 import logging
 import os
 import re
+import socket
 import subprocess
 import sys
 import textwrap
@@ -147,11 +148,15 @@ def get_crt(account_key, csr, skip_check=False, log=LOGGER, CA=DEFAULT_CA):
 
             for x in addr:
                 req = dns.message.make_query('_acme-challenge.%s' % domain, 'TXT')
-                resp = dns.query.udp(req, x, timeout=30)
-                for y in resp.answer:
-                    txt = map(lambda x: str(x)[1:-1], y)
-                    if record not in txt:
-                        raise ValueError("_acme-challenge.{0} does not contain {1} on nameserver {2}".format(domain, record, x))
+                try:
+                    resp = dns.query.udp(req, x, timeout=30)
+                except socket.error, e:
+                    print >>sys.stderr, e
+                else:
+                    for y in resp.answer:
+                        txt = map(lambda x: str(x)[1:-1], y)
+                        if record not in txt:
+                            raise ValueError("_acme-challenge.{0} does not contain {1} on nameserver {2}".format(domain, record, x))
 
         # notify challenge are met
         code, result = _send_signed_request(challenge['uri'], {
