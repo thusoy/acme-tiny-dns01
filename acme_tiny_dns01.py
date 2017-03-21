@@ -1,8 +1,23 @@
 #!/usr/bin/env python
-import argparse, subprocess, json, os, sys, base64, binascii, time, hashlib, re, copy, textwrap, logging
+import argparse
+import base64
+import binascii
+import copy
+import hashlib
+import json
+import logging
+import os
+import re
+import socket
+import subprocess
+import sys
+import textwrap
+import time
+
 import dns.message
 import dns.query
 import dns.resolver
+
 try:
     from urllib.request import urlopen # Python 3
 except ImportError:
