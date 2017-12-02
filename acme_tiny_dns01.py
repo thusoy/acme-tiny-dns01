@@ -101,7 +101,7 @@ def get_crt(account_key, csr, skip_check=False, log=LOGGER, CA=DEFAULT_CA, conta
     log.debug("Registering account...")
     payload = {
         "resource": "new-reg",
-        "agreement": "https://letsencrypt.org/documents/LE-SA-v1.1.1-August-1-2016.pdf",
+        "agreement": json.loads(urlopen(CA + "/directory").read().decode('utf8'))['meta']['terms-of-service'],
     }
     if contact_mail:
         payload["contact"] = [ "mailto:" + contact_mail ]
