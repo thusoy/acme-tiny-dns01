@@ -257,6 +257,7 @@ def main(argv):
 
             ===Example Usage===
             python acme_tiny_dns01.py --account-key ./account.key --csr ./domain.csr > signed.crt
+            python acme_tiny_dns01.py --account-key ./account.key --csr ./domain.csr --dns-zone-update 192.168.0.1 --dns-zone-key "my-key" "AbcDEFijklkMnOpQRSTUvw==" "hmac-sha1" --dns-zone example.org
             ===================
             """)
     )
