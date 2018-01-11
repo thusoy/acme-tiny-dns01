@@ -234,7 +234,7 @@ def get_crt(account_key, csr, skip_check=False, log=LOGGER, CA=DEFAULT_CA, conta
     if not dns_zone_update_server:
       log.debug("You can now remove the _acme-challenge records from your DNS zone.")
     else:
-      log.debug('Removing DNS records added for ACME challange...')
+      log.debug('Removing DNS records added for ACME challenge...')
       for domain in pending.keys():
         record = pending[domain][3]
         zone = pending[domain][4]
@@ -266,9 +266,9 @@ def main(argv):
     parser.add_argument("--skip-check", action="store_true", help="skip checking for DNS records")
     parser.add_argument("--ca", default=DEFAULT_CA, help="certificate authority, default is Let's Encrypt")
     parser.add_argument("--contact-mail", help="an optional email address to receive expiration alerts from Let's Encrypt (no guarantee)")
-    parser.add_argument("--dns-zone-update", metavar='DNS_SERVER', help="optionally automatically provision TXT record for challange on the DNS Server specified by this option using DNS zone updates")
+    parser.add_argument("--dns-zone-update", metavar='DNS_SERVER', help="optionally automatically provision TXT record for challenge on the DNS Server specified by this option using DNS zone updates")
     parser.add_argument("--dns-zone-key", nargs=3, metavar=('KEY_NAME','SECRET','ALGORITHM'), help="optional. if --dns-zone-update is used, the key name, secret and algorithm for the TSIG key which may be used to authenticate the DNS zone updates")
-    parser.add_argument("--dns-zone", help="optional. if --dns-zone-update is used, specifies in which dns zone the dns zone update should be made. Per default, the challange domain (_acme-challenge.your.domain) is assumed have it's own zone. A number can be specified if a parent domain of the challange domain is the dns zone to change. Alternatively, the name of the dns zone may be explicitly specified.")
+    parser.add_argument("--dns-zone", help="optional. if --dns-zone-update is used, specifies in which dns zone the dns zone update should be made. Per default, the challenge domain (_acme-challenge.your.domain) is assumed have it's own zone. A number can be specified if a parent domain of the challenge domain is the dns zone to change. Alternatively, the name of the dns zone may be explicitly specified.")
 
     args = parser.parse_args(argv)
 
