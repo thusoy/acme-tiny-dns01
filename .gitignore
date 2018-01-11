@@ -55,3 +55,9 @@ docs/_build/
 
 # PyBuilder
 target/
+
+# certificates, certificates requests and keys
+*.crt
+*.csr
+*.req
+*.key
