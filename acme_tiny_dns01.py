@@ -166,8 +166,8 @@ def get_crt(account_key, csr, skip_check=False, log=LOGGER, CA=DEFAULT_CA, conta
             # get the IP address of all the primary servers for the current domain
             addr = set()
             for x in dns.resolver.query(dns.resolver.zone_for_name(domain), 'NS'):
-                addr = addr.union(map(str, dns.resolver.query(str(x), 'A')))
-                addr = addr.union(map(str, dns.resolver.query(str(x), 'AAAA')))
+                addr = addr.union(map(str, dns.resolver.query(str(x), 'A', raise_on_no_answer=False)))
+                addr = addr.union(map(str, dns.resolver.query(str(x), 'AAAA', raise_on_no_answer=False)))
 
             # check directly on each name server of the current domain, if the challenge is in place
             while len(addr):
