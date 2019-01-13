@@ -3,6 +3,7 @@ import argparse
 import base64
 import binascii
 import copy
+import errno
 import hashlib
 import json
 import logging
@@ -176,6 +177,11 @@ def get_crt(account_key, csr, skip_check=False, log=LOGGER, CA=DEFAULT_CA, conta
                 req = dns.message.make_query('_acme-challenge.%s' % domain, 'TXT')
                 try:
                     resp = dns.query.udp(req, x, timeout=30)
+                except OSError as e:
+                    if not e.errno == errno.ENETUNREACH:
+                        raise
+                    log.warning("Name server {0} unreachable. Assuming it's reachable from another network, ignoring...".format(x))
+                    continue
                 except dns.exception.Timeout:
                     log.warning("Name server {0} not responding. We assume it's just bad luck and we ignore...".format(x))
                     continue
